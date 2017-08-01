@@ -2,11 +2,12 @@ package com.parse.session;
 
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
-import android.widget.TextView;
 
 
 import com.parse.FindCallback;
@@ -23,43 +24,49 @@ public class HomeActivity extends AppCompatActivity {
 
     User currentUser;
 
-    TextView textView;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
         BottomNavigationView bottomNavigationView = (BottomNavigationView) findViewById(R.id.bottom_navigation);
-        textView  = (TextView) findViewById(R.id.textView);
 
         currentParseUser = ParseUser.getCurrentUser();
 
-        this.setTitle(currentParseUser.getUsername());
+        //this.setTitle(currentParseUser.getUsername());
 
         CreateUserInfo();
 
         bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                Fragment selectedFragment = null;
                 switch(item.getItemId())
                 {
                     case R.id.action_home:
-                        textView.setText("Home");
+                        selectedFragment = HomeFragment.newInstance();
                         break;
                     case R.id.action_music:
-                        textView.setText("Music");
+                        selectedFragment = MusicFragment.newInstance();
                         break;
                     case R.id.action_notifications:
-                        textView.setText("Notifications");
+                        selectedFragment = NotificationsFragment.newInstance();
+                        break;
+                    case R.id.action_profile:
+                        selectedFragment = ProfileFragment.newInstance();
                         break;
                 }
 
+                FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+                transaction.replace(R.id.frame_layout, selectedFragment);
+                transaction.commit();
                 return true;
             }
         });
 
-        textView.setText("Home");
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.frame_layout, HomeFragment.newInstance());
+        transaction.commit();
 
     }
 

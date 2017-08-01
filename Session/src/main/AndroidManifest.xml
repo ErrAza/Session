@@ -19,7 +19,7 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="Session"
-        android:theme="@style/AppTheme">
+        android:theme="@style/Theme.AppCompat.NoActionBar">
         <activity
             android:name="com.parse.session.MainActivity"
             android:label="Session">

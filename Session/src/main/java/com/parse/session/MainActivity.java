@@ -81,9 +81,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        setTitle("Session");
-
-        //RedirectUser();
+        RedirectUser();
 
         ParseAnalytics.trackAppOpenedInBackground(getIntent());
     }

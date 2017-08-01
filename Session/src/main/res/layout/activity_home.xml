@@ -6,21 +6,23 @@
     android:layout_height="match_parent"
     tools:context="com.parse.session.HomeActivity">
 
+    <FrameLayout
+        android:id="@+id/frame_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/bottom_navigation"
+        android:animateLayoutChanges="true">
+    </FrameLayout>
+
     <android.support.design.widget.BottomNavigationView
         android:id="@+id/bottom_navigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
+        android:background="@android:color/background_light"
+        app:theme="@style/AppTheme"
         app:itemTextColor="@android:color/background_dark"
         app:menu="@menu/navbar" />
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:textSize="24sp" />
 
 
 </RelativeLayout>
