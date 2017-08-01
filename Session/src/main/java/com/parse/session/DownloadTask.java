@@ -2,6 +2,7 @@ package com.parse.session;
 
 import android.os.AsyncTask;
 import android.util.Log;
+import android.view.View;
 import android.widget.ProgressBar;
 
 import java.io.InputStream;
@@ -13,7 +14,7 @@ import java.net.URL;
  * Created by Sean on 7/27/2017.
  */
 
-public class DownloadTask extends AsyncTask<String, Void, String> {
+public class DownloadTask extends AsyncTask<String, Integer, String> {
 
     public AsyncResponse delegate = null;
 
@@ -30,6 +31,7 @@ public class DownloadTask extends AsyncTask<String, Void, String> {
             url = new URL(urls[0]);
 
             urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setConnectTimeout(1000);
             InputStream in = urlConnection.getInputStream();
             InputStreamReader reader = new InputStreamReader(in);
 
@@ -49,24 +51,33 @@ public class DownloadTask extends AsyncTask<String, Void, String> {
             return null;
         }
     }
+
+    @Override
+    protected void onProgressUpdate(Integer... values) {
+        super.onProgressUpdate(values);
+        if (this.bar != null)
+        {
+            bar.setVisibility(View.VISIBLE);
+            bar.setProgress(values[0]);
+        }
+    }
+
+
     @Override
     protected void onPostExecute(String result) {
         super.onPostExecute(result);
         if (result != null) {
             delegate.TaskComplete(result);
+            if (this.bar != null)
+            {
+                this.bar.setVisibility(View.INVISIBLE);
+            }
+
         }
         else {
             Log.e("ERROR", "ONPOSTEXECUTE ISSUE");
         }
     }
 
-    @Override
-    protected void onProgressUpdate(Void... values) {
-        super.onProgressUpdate(values);
-        Log.i("PROGRESS", values.toString());
-        /*if (this.bar != null)
-        {
-            bar.setProgress(values[0]);
-        }*/
-    }
+
 }

@@ -21,7 +21,7 @@
         android:label="Session"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".MainActivity"
+            android:name="com.parse.session.MainActivity"
             android:label="Session">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -29,9 +29,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".UserListActivity" />
-        <activity android:name=".FeedActivity" />
-        <activity android:name=".HomeActivity" />
+        <activity android:name="com.parse.session.UserListActivity" />
+        <activity android:name="com.parse.session.FeedActivity" />
+        <activity android:name="com.parse.session.HomeActivity" />
+        <activity android:name="com.parse.session.ViewArtistActivity" />
     </application>
 
 </manifest>
