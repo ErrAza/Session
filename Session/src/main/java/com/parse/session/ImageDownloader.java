@@ -41,4 +41,9 @@ public class ImageDownloader extends AsyncTask<String, Void, Bitmap> {
 
         return null;
     }
+
+    @Override
+    protected void onProgressUpdate(Void... values) {
+        super.onProgressUpdate(values);
+    }
 }

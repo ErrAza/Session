@@ -2,6 +2,7 @@ package com.parse.session;
 
 import android.os.AsyncTask;
 import android.util.Log;
+import android.widget.ProgressBar;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -15,6 +16,8 @@ import java.net.URL;
 public class DownloadTask extends AsyncTask<String, Void, String> {
 
     public AsyncResponse delegate = null;
+
+    ProgressBar bar;
 
     @Override
     protected String doInBackground(String... urls) {
@@ -55,5 +58,15 @@ public class DownloadTask extends AsyncTask<String, Void, String> {
         else {
             Log.e("ERROR", "ONPOSTEXECUTE ISSUE");
         }
+    }
+
+    @Override
+    protected void onProgressUpdate(Void... values) {
+        super.onProgressUpdate(values);
+        Log.i("PROGRESS", values.toString());
+        /*if (this.bar != null)
+        {
+            bar.setProgress(values[0]);
+        }*/
     }
 }
