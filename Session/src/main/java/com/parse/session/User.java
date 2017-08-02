@@ -1,6 +1,7 @@
 package com.parse.session;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Sean on 7/27/2017.
@@ -10,8 +11,9 @@ public class User {
 
     private String _name;
     private String _email;
-    private ArrayList<String> _genres;
+    private List<String> _genres;
     private ArrayList<Artist> _artists;
+    private List<String> _artistList;
 
     public String getName()
     {
@@ -23,11 +25,15 @@ public class User {
         return _email;
     }
 
-    public ArrayList<String> getGenres() {
+    public List<String> getGenres() {
         return _genres;
     }
 
     public ArrayList<Artist> getArtists() { return _artists; }
+
+    public List<String> getArtistList() {
+        return _artistList;
+    }
 
     public void setName(String name)
     {
@@ -39,11 +45,13 @@ public class User {
         this._email = email;
     }
 
-    public void setGenres(ArrayList<String> _genres) {
-        this._genres = _genres;
+    public void setGenres(List<String> genres) {
+        this._genres = genres;
     }
 
     public void setArtists(ArrayList<Artist> artists) { this._artists = artists; }
 
-
+    public void setArtistList(List<String> artistList) {
+        this._artistList = artistList;
+    }
 }

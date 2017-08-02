@@ -33,8 +33,6 @@ public class HomeActivity extends AppCompatActivity {
 
         currentParseUser = ParseUser.getCurrentUser();
 
-        //this.setTitle(currentParseUser.getUsername());
-
         CreateUserInfo();
 
         bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -72,6 +70,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private void CreateUserInfo()
     {
+        currentUser = new User();
 
         ParseQuery<ParseObject> query = ParseQuery.getQuery("UserInfo");
 
@@ -87,6 +86,10 @@ public class HomeActivity extends AppCompatActivity {
                         Log.i("INFO", "exists");
                         ParseObject object = objects.get(0);
                         object.put("username", currentParseUser.getUsername());
+                        List<String> tempList = object.getList("artists");
+                        currentUser.setArtistList(tempList);
+                        tempList = object.getList("genres");
+                        currentUser.setGenres(tempList);
                         object.saveInBackground();
                     }
                     else
@@ -100,8 +103,14 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
-        currentUser = new User();
         currentUser.setName(currentParseUser.getUsername());
+
+        ProfileManager.getInstance().currentUser = currentUser;
+    }
+
+    private void PopulateUserProfile()
+    {
+
     }
 
 }

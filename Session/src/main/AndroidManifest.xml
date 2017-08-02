@@ -32,7 +32,7 @@
         <activity android:name="com.parse.session.UserListActivity" />
         <activity android:name="com.parse.session.FeedActivity" />
         <activity android:name="com.parse.session.HomeActivity" />
-        <activity android:name="com.parse.session.ViewArtistActivity" />
+        <activity android:name="com.parse.session.ViewArtistFragment" />
     </application>
 
 </manifest>

@@ -1,10 +1,13 @@
 package com.parse.session;
 
 import android.graphics.Bitmap;
-import android.support.v7.app.AppCompatActivity;
+import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -26,22 +29,21 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ViewArtistActivity extends AppCompatActivity implements AsyncResponse {
+public class ViewArtistFragment extends Fragment implements AsyncResponse {
 
 
     private ArrayList<String> ApiResultsList = new ArrayList<>();
 
-    private ListView artistsListView;
-
-    ArrayList<String> artistList = new ArrayList<>();
-
-    ArrayAdapter arrayAdapter;
+    private ListView similarArtistsListView;
 
     private DownloadTask task;
 
-    ParseUser currentParseUser;
 
-    User currentUser = new User();
+    ArrayList<String> similarArtistsList = new ArrayList<>();
+
+    ArrayAdapter arrayAdapter;
+
+    ParseUser currentParseUser;
 
     Artist artist;
 
@@ -55,28 +57,39 @@ public class ViewArtistActivity extends AppCompatActivity implements AsyncRespon
 
     ProgressBar progressBar;
 
+    public static ViewArtistFragment newInstance() {
+        return new ViewArtistFragment();
+    }
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_view_artist);
+    }
 
-        //this.setTitle(currentParseUser.getUsername());
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.activity_view_artist, container, false);
+    }
 
-        progressBar = (ProgressBar) findViewById(R.id.progressBarImageView);
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
 
-        artistImageView = (ImageView) findViewById(R.id.artistImageView);
+        progressBar = (ProgressBar) getView().findViewById(R.id.progressBarImageView);
 
-        artistTextView = (TextView) findViewById(R.id.textViewArtistName);
+        artistImageView = (ImageView) getView().findViewById(R.id.artistImageView);
 
-        tagTextView = (TextView) findViewById(R.id.textViewArtistTag);
+        artistTextView = (TextView) getView().findViewById(R.id.textViewArtistName);
 
-        artistsListView = (ListView) findViewById(R.id.artistsListView);
+        tagTextView = (TextView) getView().findViewById(R.id.textViewArtistTag);
 
-        addArtistButton = (Button) findViewById(R.id.addArtistButton);
+        similarArtistsListView = (ListView) getView().findViewById(R.id.artistsListView);
+
+        addArtistButton = (Button) getView().findViewById(R.id.addArtistButton);
 
         currentParseUser = ParseUser.getCurrentUser();
 
-        CreateUserInfo();
+
 
         String url = LastFmRest.getInstance().GetArtist("Erra");
 
@@ -85,22 +98,30 @@ public class ViewArtistActivity extends AppCompatActivity implements AsyncRespon
         task.bar = progressBar;
         task.execute(url);
 
-        arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, artistList);
+        arrayAdapter = new ArrayAdapter(getActivity(), android.R.layout.simple_list_item_1, similarArtistsList);
 
-        artistsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        similarArtistsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                if (!artistList.isEmpty())
+                if (!similarArtistsList.isEmpty())
                 {
-                    Log.i("INFO", artistList.get(position));
+                    Log.i("INFO", similarArtistsList.get(position));
 
-                    FindArtist(artistList.get(position));
+                    FindArtist(similarArtistsList.get(position));
                 }
             }
         });
 
-        artistsListView.setAdapter(arrayAdapter);
+        similarArtistsListView.setAdapter(arrayAdapter);
+
+        super.onActivityCreated(savedInstanceState);
+    }
+
+    @Override
+    public void onDestroyView() {
+
+        super.onDestroyView();
     }
 
     private void FindArtist(String artistName)
@@ -112,48 +133,13 @@ public class ViewArtistActivity extends AppCompatActivity implements AsyncRespon
         task.execute(url);
     }
 
-    private void CreateUserInfo()
+    private void PopulateSimilarArtistsView()
     {
-
-        ParseQuery<ParseObject> query = ParseQuery.getQuery("UserInfo");
-
-        query.whereEqualTo("username", currentParseUser.getUsername());
-
-        query.findInBackground(new FindCallback<ParseObject>() {
-            @Override
-            public void done(List<ParseObject> objects, ParseException e) {
-                if (e == null)
-                {
-                    if (objects.size() > 0)
-                    {
-                        Log.i("INFO", "exists");
-                        ParseObject object = objects.get(0);
-                        object.put("username", currentParseUser.getUsername());
-                        object.saveInBackground();
-                    }
-                    else
-                    {
-                        Log.i("INFO", "doesn't exist");
-                        ParseObject userInfo = new ParseObject("UserInfo");
-                        userInfo.put("username", currentParseUser.getUsername());
-                        userInfo.saveInBackground();
-                    }
-                }
-            }
-        });
-
-        currentUser.setName(currentParseUser.getUsername());
-    }
-
-    private void PopulateUserData()
-    {
-        currentUser.setArtists(artist.getSimilar());
-
-        artistList.clear();
+        similarArtistsList.clear();
 
         for (Artist artiste : artist.getSimilar())
         {
-            artistList.add(artiste.getName());
+            similarArtistsList.add(artiste.getName());
         }
 
         arrayAdapter.notifyDataSetChanged();
@@ -262,10 +248,13 @@ public class ViewArtistActivity extends AppCompatActivity implements AsyncRespon
             JSONArray tagsArray = new JSONArray(tagsInfo.getString("tag"));
             JSONObject firstTag = new JSONObject(tagsArray.get(0).toString());
 
+            String tag = firstTag.getString("name");
+            tag = tag.substring(0, 1).toUpperCase() + tag.substring(1).toLowerCase();
+
             artist = new Artist();
 
             artist.setName(artistInfo.getString("name"));
-            artist.setTag(firstTag.getString("name"));
+            artist.setTag(tag);
 
             for(int i = 0; i < imageInfoList.length(); i++)
             {
@@ -294,6 +283,6 @@ public class ViewArtistActivity extends AppCompatActivity implements AsyncRespon
             e.printStackTrace();
         }
 
-        PopulateUserData();
+        PopulateSimilarArtistsView();
     }
 }
