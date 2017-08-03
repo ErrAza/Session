@@ -1,14 +1,9 @@
 package com.parse.session;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,20 +21,15 @@ import android.widget.Toast;
 import android.widget.ViewFlipper;
 
 import com.parse.FindCallback;
-import com.parse.GetDataCallback;
 import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -51,7 +41,6 @@ import java.util.List;
 
 public class MusicFragment extends Fragment implements AsyncResponse {
 
-    SharedPreferences sharedPreferences;
 
     ViewFlipper viewFlipper;
 
@@ -60,7 +49,7 @@ public class MusicFragment extends Fragment implements AsyncResponse {
     ArrayAdapter artistsArrayAdapter;
 
     ListView similarArtistsListView;
-    ArrayList<String> similarArtistsList = new ArrayList<>();
+    List<String> similarArtistsList = new ArrayList<>();
     ArrayAdapter similarArtistsArrayAdapter;
 
     Artist artist;
@@ -93,7 +82,6 @@ public class MusicFragment extends Fragment implements AsyncResponse {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
 
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
 
         artistList = ProfileManager.getInstance().currentUser.getArtistList();
 
@@ -201,38 +189,68 @@ public class MusicFragment extends Fragment implements AsyncResponse {
 
     private void FindArtist(String artistName)
     {
+        artist = LocalDataManager.getInstance(getActivity()).FetchArtistFromLocal(artistName);
+
+        if (artist != null)
+        {
+            Log.i("LOCAL", "Found local data.");
+            artistImage = LocalDataManager.getInstance(getActivity()).FetchBitmapFromLocal(artistName);
+            similarArtistsList = artist.getSimilar();
+            if (artistImage == null)
+            {
+                FetchRemote(artistName);
+            }
+            UpdateView();
+            return;
+        }
+        else
+        {
+            Log.i("LOCAL", "Local data not found.");
+            FetchRemote(artistName);
+        }
+
+        similarArtistsList.clear();
+    }
+
+    private void FetchLocal()
+    {
+
+    }
+
+    private void FetchRemote(String artistName)
+    {
+        Log.i("INFO", "Fetching from Remote");
+        artistTextView.setText("Fetching...");
+        tagTextView.setText("");
+
         String url = LastFmRest.getInstance().GetArtist(artistName);
 
         task = new DownloadTask();
         task.delegate = this;
         task.bar = progressBar;
         task.execute(url);
-
-        artistImage = AttemptToFetchFromLocal(artistName);
-
-        artistTextView.setText("Fetching...");
-        tagTextView.setText("");
-
-        similarArtistsList.clear();
-        similarArtistsArrayAdapter.notifyDataSetChanged();
-
-        if (artistImage != null)
-        {
-            artistImageView.setImageBitmap(artistImage);
-            artistTextView.setText(artistName);
-        }
     }
 
-    private void PopulateSimilarArtistsView()
+    private void PopulateSimilarArtistsListView()
     {
         similarArtistsList.clear();
 
-        for (Artist artiste : artist.getSimilar())
+        for (String artiste : artist.getSimilar())
         {
-            similarArtistsList.add(artiste.getName());
+            similarArtistsList.add(artiste);
         }
 
         similarArtistsArrayAdapter.notifyDataSetChanged();
+    }
+
+    private void UpdateView()
+    {
+        artistImageView.setImageBitmap(artistImage);
+        artistTextView.setText(artist.getName());
+        tagTextView.setText(artist.getTag());
+
+        similarArtistsArrayAdapter.notifyDataSetChanged();
+
     }
 
     public void AddArtistToUser(View view)
@@ -287,7 +305,12 @@ public class MusicFragment extends Fragment implements AsyncResponse {
 
             if (jsonObject.has("artist"))
             {
-                ParseArtistInfo(jsonObject);
+                artist = LastFmJsonParser.getInstance().ParseArtistInfo(jsonObject);
+
+                if (artist != null)
+                {
+                    PopulateSimilarArtistsListView();
+                }
 
                 if (artistImage == null) {
 
@@ -301,15 +324,12 @@ public class MusicFragment extends Fragment implements AsyncResponse {
                     }
 
                     if (artistImage != null) {
+
                         artistImageView.setImageBitmap(artistImage);
 
-                        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                        artistImage.compress(Bitmap.CompressFormat.PNG, 100, stream);
-                        byte[] byteArray = stream.toByteArray();
+                        LocalDataManager.getInstance(getActivity()).SaveBitmapToLocal(artistImage, artist.getName());
 
-                        String arrayString = Base64.encodeToString(byteArray, Base64.DEFAULT);
-
-                        sharedPreferences.edit().putString(artist.getName(), arrayString).apply();
+                        byte[] byteArray = LocalDataManager.getInstance(getActivity()).ConvertBitmapToByteArray(artistImage);
 
                         Log.i("PARSE", "Saving a copy on parse.");
                         ParseFile imageFile = new ParseFile(java.util.UUID.randomUUID() + ".png", byteArray);
@@ -319,9 +339,6 @@ public class MusicFragment extends Fragment implements AsyncResponse {
                         artistImageObject.saveInBackground();
                     }
                 }
-
-                artistTextView.setText(artist.getName());
-                tagTextView.setText(artist.getTag());
 
                 ParseQuery<ParseObject> query2 = ParseQuery.getQuery("UserInfo");
 
@@ -355,76 +372,6 @@ public class MusicFragment extends Fragment implements AsyncResponse {
 
     }
 
-    private void ParseArtistInfo(JSONObject result)
-    {
-        try {
 
-            JSONObject artistInfo = result.getJSONObject("artist");
-            JSONArray imageInfoList = new JSONArray(artistInfo.getString("image"));
-            JSONObject similarInfo = new JSONObject(artistInfo.getString("similar"));
-            JSONArray similarArtists = new JSONArray(similarInfo.getString("artist"));
-
-            JSONObject tagsInfo = artistInfo.getJSONObject("tags");
-            JSONArray tagsArray = new JSONArray(tagsInfo.getString("tag"));
-            JSONObject firstTag = new JSONObject(tagsArray.get(0).toString());
-
-            String[] tagSplits = firstTag.getString("name").split(" ");
-            String tag = "";
-            for (String tagSplit : tagSplits)
-            {
-                tag += tagSplit.substring(0, 1).toUpperCase() + tagSplit.substring(1).toLowerCase() +  " ";
-            }
-            tag = tag.substring(0, tag.length() - 1);
-
-            artist = new Artist();
-
-            artist.setName(artistInfo.getString("name"));
-            artist.setTag(tag);
-
-            for(int i = 0; i < imageInfoList.length(); i++)
-            {
-                JSONObject object = new JSONObject(imageInfoList.get(i).toString());
-                if (object.getString("size").equals("large"))
-                {
-                    artist.setImageUrl(object.getString("#text"));
-                    Log.i("IMG", artist.getImageUrl());
-                }
-            }
-
-            ArrayList<Artist> similarArtistsList = new ArrayList<>();
-
-            for(int i = 0; i < similarArtists.length(); i++)
-            {
-                JSONObject object = new JSONObject(similarArtists.get(i).toString());
-                Artist similarArtist = new Artist();
-                similarArtist.setName(object.getString("name"));
-
-                similarArtistsList.add(similarArtist);
-            }
-
-            artist.setSimilar(similarArtistsList);
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-        PopulateSimilarArtistsView();
-    }
-
-    private Bitmap AttemptToFetchFromLocal(String artistName)
-    {
-        Bitmap bitmap = null;
-
-        String localByteArrayString = sharedPreferences.getString(artistName, "Nope");
-
-        if (!localByteArrayString.equals("Nope"))
-        {
-            Log.i("LOCAL", "Found local data.");
-            byte[] array = Base64.decode(localByteArrayString, Base64.DEFAULT);
-            bitmap = BitmapFactory.decodeByteArray(array, 0, array.length);
-        }
-
-        return bitmap;
-    }
 
 }

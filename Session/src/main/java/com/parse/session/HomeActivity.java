@@ -1,9 +1,12 @@
 package com.parse.session;
 
+import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -16,13 +19,18 @@ import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.List;
 
-public class HomeActivity extends AppCompatActivity {
+public class HomeActivity extends AppCompatActivity implements AsyncResponse {
 
     ParseUser currentParseUser;
 
     User currentUser;
+
+    LocalDataManager localDataManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,7 +78,11 @@ public class HomeActivity extends AppCompatActivity {
 
     private void CreateUserInfo()
     {
+        localDataManager = LocalDataManager.getInstance(this);
+
         currentUser = new User();
+
+        currentUser.setName(currentParseUser.getUsername());
 
         ParseQuery<ParseObject> query = ParseQuery.getQuery("UserInfo");
 
@@ -91,6 +103,10 @@ public class HomeActivity extends AppCompatActivity {
                         tempList = object.getList("genres");
                         currentUser.setGenres(tempList);
                         object.saveInBackground();
+
+                        ProfileManager.getInstance().currentUser = currentUser;
+
+                        PopulateUserProfile();
                     }
                     else
                     {
@@ -103,14 +119,102 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
-        currentUser.setName(currentParseUser.getUsername());
 
-        ProfileManager.getInstance().currentUser = currentUser;
     }
 
     private void PopulateUserProfile()
     {
+        for(int i = 0; i < currentUser.getArtistList().size(); i++)
+        {
+            if (!LocalDataManager.sharedPreferences.contains(currentUser.getArtistList().get(i)))
+            {
+                DownloadTask task = new DownloadTask();
+                String url = LastFmRest.getInstance().GetArtist(currentUser.getArtistList().get(i));
+                task.delegate = this;
+                task.execute(url);
+                Log.i("INFO", "Local Artist Data Not Found for " + currentUser.getArtistList().get(i));
+            }
+            else
+            {
+                Artist artist = LocalDataManager.getInstance(this).FetchArtistFromLocal(currentUser.getArtistList().get(i));
 
+                ProfileManager.getInstance().currentUser.getArtists().add(artist);
+            }
+        }
     }
 
+    @Override
+    public void TaskComplete(String result) {
+
+        Log.i("RESULT", "Result Found.");
+
+        JSONObject jsonObject;
+
+        Artist artist;
+
+        try {
+            jsonObject = new JSONObject(result);
+
+            if (jsonObject.has("artist"))
+            {
+                artist = LastFmJsonParser.getInstance().ParseArtistInfo(jsonObject);
+
+                LocalDataManager.getInstance(this).SaveArtistToLocal(artist);
+
+                Bitmap bitmap = LocalDataManager.getInstance(this).FetchBitmapFromLocal(artist.getName());
+
+                if (bitmap == null)
+                {
+                    ImageDownloader imageDownloader = new ImageDownloader();
+
+                    try {
+                        bitmap = imageDownloader.execute(artist.getImageUrl()).get();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                if (bitmap != null)
+                {
+                    LocalDataManager.getInstance(this).SaveBitmapToLocal(bitmap, artist.getName());
+                }
+
+                if (!currentUser.getArtists().contains(artist))
+                {
+                    ProfileManager.getInstance().currentUser.getArtists().add(artist);
+                }
+
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

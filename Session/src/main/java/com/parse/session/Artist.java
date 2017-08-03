@@ -1,6 +1,6 @@
 package com.parse.session;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Sean on 7/27/2017.
@@ -11,7 +11,8 @@ public class Artist {
     private String _name;
     private String _imageUrl;
     private String _tag;
-    private ArrayList<Artist> _similar;
+    private List<String> _similar;
+    private String _imageArrayString;
 
     public String getName()
     {
@@ -23,12 +24,12 @@ public class Artist {
         _name = name;
     }
 
-    public ArrayList<Artist> getSimilar()
+    public List<String> getSimilar()
     {
         return _similar;
     }
 
-    public void setSimilar(ArrayList<Artist> similar)
+    public void setSimilar(List<String> similar)
     {
         _similar = similar;
     }
@@ -41,4 +42,11 @@ public class Artist {
 
     public void setTag(String tag) { _tag = tag; }
 
+    public String getImageArrayString() {
+        return _imageArrayString;
+    }
+
+    public void setImageArrayString(String _imageArrayString) {
+        this._imageArrayString = _imageArrayString;
+    }
 }

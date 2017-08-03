@@ -15,6 +15,11 @@ public class User {
     private ArrayList<Artist> _artists;
     private List<String> _artistList;
 
+    public User()
+    {
+        _artists = new ArrayList<>();
+    }
+
     public String getName()
     {
         return _name;
