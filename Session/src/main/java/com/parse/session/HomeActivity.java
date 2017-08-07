@@ -1,18 +1,22 @@
 package com.parse.session;
 
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.ImageRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.parse.FindCallback;
 import com.parse.ParseException;
 import com.parse.ParseObject;
@@ -24,7 +28,7 @@ import org.json.JSONObject;
 
 import java.util.List;
 
-public class HomeActivity extends AppCompatActivity implements AsyncResponse {
+public class HomeActivity extends AppCompatActivity {
 
     ParseUser currentParseUser;
 
@@ -32,10 +36,14 @@ public class HomeActivity extends AppCompatActivity implements AsyncResponse {
 
     LocalDataManager localDataManager;
 
+    RequestQueue queue;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+
+        queue = VolleyManager.getInstance(this.getApplicationContext()).getRequestQueue();
 
         BottomNavigationView bottomNavigationView = (BottomNavigationView) findViewById(R.id.bottom_navigation);
 
@@ -128,11 +136,21 @@ public class HomeActivity extends AppCompatActivity implements AsyncResponse {
         {
             if (!LocalDataManager.sharedPreferences.contains(currentUser.getArtistList().get(i)))
             {
-                DownloadTask task = new DownloadTask();
                 String url = LastFmRest.getInstance().GetArtist(currentUser.getArtistList().get(i));
-                task.delegate = this;
-                task.execute(url);
-                Log.i("INFO", "Local Artist Data Not Found for " + currentUser.getArtistList().get(i));
+
+                StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                        new Response.Listener<String>() {
+                            @Override
+                            public void onResponse(String response) {
+                                TaskComplete(response);
+                            }
+                        }, new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                    }
+                });
+
+                queue.add(stringRequest);
             }
             else
             {
@@ -143,14 +161,13 @@ public class HomeActivity extends AppCompatActivity implements AsyncResponse {
         }
     }
 
-    @Override
     public void TaskComplete(String result) {
 
         Log.i("RESULT", "Result Found.");
 
         JSONObject jsonObject;
 
-        Artist artist;
+        final Artist artist;
 
         try {
             jsonObject = new JSONObject(result);
@@ -161,22 +178,18 @@ public class HomeActivity extends AppCompatActivity implements AsyncResponse {
 
                 LocalDataManager.getInstance(this).SaveArtistToLocal(artist);
 
-                Bitmap bitmap = LocalDataManager.getInstance(this).FetchBitmapFromLocal(artist.getName());
+                final Bitmap bitmap = LocalDataManager.getInstance(this).FetchBitmapFromLocal(artist.getName());
 
                 if (bitmap == null)
                 {
-                    ImageDownloader imageDownloader = new ImageDownloader();
+                    ImageRequest ir = new ImageRequest(artist.getImageUrl(), new Response.Listener<Bitmap>() {
+                        @Override
+                        public void onResponse(Bitmap response) {
+                            LocalDataManager.getInstance(getApplicationContext()).SaveBitmapToLocal(response, artist.getName());
+                        }
+                    }, 100, 100, null, null);
 
-                    try {
-                        bitmap = imageDownloader.execute(artist.getImageUrl()).get();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                if (bitmap != null)
-                {
-                    LocalDataManager.getInstance(this).SaveBitmapToLocal(bitmap, artist.getName());
+                    queue.add(ir);
                 }
 
                 if (!currentUser.getArtists().contains(artist))

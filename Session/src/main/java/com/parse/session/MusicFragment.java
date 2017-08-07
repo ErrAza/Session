@@ -20,6 +20,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
 
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.ImageRequest;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.parse.FindCallback;
 import com.parse.ParseException;
 import com.parse.ParseFile;
@@ -39,7 +45,7 @@ import java.util.List;
  * Created by Sean on 8/1/2017.
  */
 
-public class MusicFragment extends Fragment implements AsyncResponse {
+public class MusicFragment extends Fragment {
 
 
     ViewFlipper viewFlipper;
@@ -57,7 +63,6 @@ public class MusicFragment extends Fragment implements AsyncResponse {
     TextView artistTextView;
     TextView tagTextView;
     Button addArtistButton;
-    ProgressBar progressBar;
     Button backButton;
     Bitmap artistImage;
 
@@ -119,7 +124,6 @@ public class MusicFragment extends Fragment implements AsyncResponse {
             }
         });
 
-        progressBar = (ProgressBar) getView().findViewById(R.id.progressBarImageView);
         artistImageView = (ImageView) getView().findViewById(R.id.artistImageView);
         artistTextView = (TextView) getView().findViewById(R.id.textViewArtistName);
         tagTextView = (TextView) getView().findViewById(R.id.textViewArtistTag);
@@ -147,7 +151,7 @@ public class MusicFragment extends Fragment implements AsyncResponse {
 
                 if (!similarArtistsList.isEmpty())
                 {
-                    Log.i("INFO", similarArtistsList.get(position));
+                    Log.i("INFOaa", similarArtistsList.get(position));
 
                     FindArtist(similarArtistsList.get(position));
                 }
@@ -162,7 +166,7 @@ public class MusicFragment extends Fragment implements AsyncResponse {
     @Override
     public void onDestroyView() {
 
-        viewFlipper = null;
+        /*viewFlipper = null;
         artistsListView = null;
         artistList = null;
         artistsArrayAdapter = null;
@@ -174,10 +178,9 @@ public class MusicFragment extends Fragment implements AsyncResponse {
         artistTextView = null;
         tagTextView = null;
         addArtistButton = null;
-        progressBar = null;
         backButton = null;
         task = null;
-        artistImage = null;
+        artistImage = null;*/
 
         super.onDestroyView();
     }
@@ -195,25 +198,17 @@ public class MusicFragment extends Fragment implements AsyncResponse {
         {
             Log.i("LOCAL", "Found local data.");
             artistImage = LocalDataManager.getInstance(getActivity()).FetchBitmapFromLocal(artistName);
-            similarArtistsList = artist.getSimilar();
             if (artistImage == null)
             {
                 FetchRemote(artistName);
             }
             UpdateView();
-            return;
         }
         else
         {
             Log.i("LOCAL", "Local data not found.");
             FetchRemote(artistName);
         }
-
-        similarArtistsList.clear();
-    }
-
-    private void FetchLocal()
-    {
 
     }
 
@@ -225,20 +220,26 @@ public class MusicFragment extends Fragment implements AsyncResponse {
 
         String url = LastFmRest.getInstance().GetArtist(artistName);
 
-        task = new DownloadTask();
-        task.delegate = this;
-        task.bar = progressBar;
-        task.execute(url);
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        TaskComplete(response);
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+            }
+        });
+
+        VolleyManager.getInstance(getContext()).getRequestQueue().add(stringRequest);
     }
 
     private void PopulateSimilarArtistsListView()
     {
         similarArtistsList.clear();
 
-        for (String artiste : artist.getSimilar())
-        {
-            similarArtistsList.add(artiste);
-        }
+        similarArtistsList.addAll(artist.getSimilar());
 
         similarArtistsArrayAdapter.notifyDataSetChanged();
     }
@@ -248,6 +249,11 @@ public class MusicFragment extends Fragment implements AsyncResponse {
         artistImageView.setImageBitmap(artistImage);
         artistTextView.setText(artist.getName());
         tagTextView.setText(artist.getTag());
+        similarArtistsList.clear();
+
+        similarArtistsList.addAll(artist.getSimilar());
+
+        Log.i("SA", String.valueOf(similarArtistsList.size()) + " asdsa");
 
         similarArtistsArrayAdapter.notifyDataSetChanged();
 
@@ -295,7 +301,6 @@ public class MusicFragment extends Fragment implements AsyncResponse {
         addArtistButton.setVisibility(View.INVISIBLE);
     }
 
-    @Override
     public void TaskComplete(String result) {
 
         JSONObject jsonObject;
@@ -314,30 +319,27 @@ public class MusicFragment extends Fragment implements AsyncResponse {
 
                 if (artistImage == null) {
 
-                    ImageDownloader imageDownloader = new ImageDownloader();
+                    ImageRequest ir = new ImageRequest(artist.getImageUrl(), new Response.Listener<Bitmap>() {
+                        @Override
+                        public void onResponse(Bitmap response) {
+                            LocalDataManager.getInstance(getContext()).SaveBitmapToLocal(response, artist.getName());
 
-                    try {
-                        Log.i("LASTFM", "Fetching from LastFM.");
-                        artistImage = imageDownloader.execute(artist.getImageUrl()).get();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                            artistImageView.setImageBitmap(artistImage);
 
-                    if (artistImage != null) {
+                            LocalDataManager.getInstance(getActivity()).SaveBitmapToLocal(artistImage, artist.getName());
 
-                        artistImageView.setImageBitmap(artistImage);
+                            /*byte[] byteArray = LocalDataManager.getInstance(getActivity()).ConvertBitmapToByteArray(artistImage);
 
-                        LocalDataManager.getInstance(getActivity()).SaveBitmapToLocal(artistImage, artist.getName());
+                            Log.i("PARSE", "Saving a copy on parse.");
+                            ParseFile imageFile = new ParseFile(java.util.UUID.randomUUID() + ".png", byteArray);
+                            ParseObject artistImageObject = new ParseObject("ArtistImages");
+                            artistImageObject.put("artist", artist.getName());
+                            artistImageObject.put("image", imageFile);
+                            artistImageObject.saveInBackground();*/
+                        }
+                    }, 100, 100, null, null);
 
-                        byte[] byteArray = LocalDataManager.getInstance(getActivity()).ConvertBitmapToByteArray(artistImage);
-
-                        Log.i("PARSE", "Saving a copy on parse.");
-                        ParseFile imageFile = new ParseFile(java.util.UUID.randomUUID() + ".png", byteArray);
-                        ParseObject artistImageObject = new ParseObject("ArtistImages");
-                        artistImageObject.put("artist", artist.getName());
-                        artistImageObject.put("image", imageFile);
-                        artistImageObject.saveInBackground();
-                    }
+                    VolleyManager.getInstance(getContext()).getRequestQueue().add(ir);
                 }
 
                 ParseQuery<ParseObject> query2 = ParseQuery.getQuery("UserInfo");
