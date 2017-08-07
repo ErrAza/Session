@@ -1,4 +1,4 @@
-package com.parse.session;
+package com.sean.session;
 
 import java.util.List;
 

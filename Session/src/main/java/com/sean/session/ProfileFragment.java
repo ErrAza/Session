@@ -1,4 +1,4 @@
-package com.parse.session;
+package com.sean.session;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.parse.ParseUser;
+import com.parse.session.R;
 
 /**
  * Created by Sean on 8/1/2017.

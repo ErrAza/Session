@@ -1,4 +1,4 @@
-package com.parse.session;
+package com.sean.session;
 
 import android.util.Log;
 
@@ -26,6 +26,35 @@ public class LastFmJsonParser {
         }
 
         return instance;
+    }
+
+    public String[] ParseArtistSearchResults(JSONObject result)
+    {
+        if (result == null)
+            return null;
+
+        String[] searchResults = null;
+
+        try {
+
+            JSONObject resultsObject = result.getJSONObject("results");
+            JSONObject artistMatches = resultsObject.getJSONObject(("artistmatches"));
+            JSONArray artistsArray = artistMatches.getJSONArray("artist");
+
+            searchResults = new String[artistsArray.length()];
+
+            for(int i = 0; i < artistsArray.length(); i++)
+            {
+                JSONObject obj = artistsArray.getJSONObject(i);
+                searchResults[i] = obj.getString("name");
+            }
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+
+        return searchResults;
     }
 
     public Artist ParseArtistInfo(JSONObject result)

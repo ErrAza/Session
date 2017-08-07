@@ -1,4 +1,4 @@
-package com.parse.session;
+package com.sean.session;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,6 +8,8 @@ import java.util.List;
  */
 
 public class User {
+
+    public boolean IsReady = false;
 
     private String _name;
     private String _email;

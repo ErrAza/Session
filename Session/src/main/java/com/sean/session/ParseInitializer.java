@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
-package com.parse.session;
+package com.sean.session;
 
 import android.app.Application;
 
@@ -14,7 +14,7 @@ import com.parse.Parse;
 import com.parse.ParseACL;
 
 
-public class StarterApplication extends Application {
+public class ParseInitializer extends Application {
 
   @Override
   public void onCreate() {

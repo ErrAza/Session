@@ -1,6 +1,4 @@
-package com.parse.session;
-
-import java.util.List;
+package com.sean.session;
 
 /**
  * Created by Sean on 7/27/2017.
@@ -43,6 +41,18 @@ public class LastFmRest {
             return null;
 
         String url = baseUrl + "?method=artist.gettoptags&artist=" + artistName;
+        url += "&api_key=" + key;
+        url += "&format=json";
+
+        return url;
+    }
+
+    public String SearchArtist(String artistName)
+    {
+        if (artistName.length() <= 0)
+            return null;
+
+        String url = baseUrl + "?method=artist.search&artist=" + artistName;
         url += "&api_key=" + key;
         url += "&format=json";
 

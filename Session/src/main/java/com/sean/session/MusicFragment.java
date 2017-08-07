@@ -1,21 +1,27 @@
-package com.parse.session;
+package com.sean.session;
 
+import android.app.Activity;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
@@ -25,18 +31,18 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageRequest;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.parse.FindCallback;
 import com.parse.ParseException;
-import com.parse.ParseFile;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
+import com.parse.session.R;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -45,7 +51,7 @@ import java.util.List;
  * Created by Sean on 8/1/2017.
  */
 
-public class MusicFragment extends Fragment {
+public class MusicFragment extends Fragment implements View.OnKeyListener {
 
 
     ViewFlipper viewFlipper;
@@ -58,6 +64,10 @@ public class MusicFragment extends Fragment {
     List<String> similarArtistsList = new ArrayList<>();
     ArrayAdapter similarArtistsArrayAdapter;
 
+    ListView searchResultsListView;
+    List<String> searchResultsList = new ArrayList<>();
+    ArrayAdapter searchResultsArrayAdapter;
+
     Artist artist;
     ImageView artistImageView;
     TextView artistTextView;
@@ -65,8 +75,7 @@ public class MusicFragment extends Fragment {
     Button addArtistButton;
     Button backButton;
     Bitmap artistImage;
-
-    DownloadTask task;
+    EditText searchText;
 
 
     public static MusicFragment newInstance() {
@@ -115,8 +124,6 @@ public class MusicFragment extends Fragment {
 
                 if (!artistList.isEmpty())
                 {
-                    Log.i("INFO", artistList.get(position));
-
                     FindArtist(artistList.get(position));
 
                     viewFlipper.showNext();
@@ -142,6 +149,8 @@ public class MusicFragment extends Fragment {
                 Back(v);
             }
         });
+        searchText = (EditText) getView().findViewById(R.id.artistSearchText);
+        searchResultsListView = (ListView) getView().findViewById(R.id.foundArtistsListView);
 
         similarArtistsArrayAdapter = new ArrayAdapter(getActivity(), android.R.layout.simple_list_item_1, similarArtistsList);
 
@@ -151,8 +160,6 @@ public class MusicFragment extends Fragment {
 
                 if (!similarArtistsList.isEmpty())
                 {
-                    Log.i("INFOaa", similarArtistsList.get(position));
-
                     FindArtist(similarArtistsList.get(position));
                 }
             }
@@ -160,13 +167,41 @@ public class MusicFragment extends Fragment {
 
         similarArtistsListView.setAdapter(similarArtistsArrayAdapter);
 
+        searchResultsArrayAdapter = new ArrayAdapter(getActivity(), android.R.layout.simple_list_item_1, searchResultsList);
+
+        searchResultsListView.setAdapter(searchResultsArrayAdapter);
+
+        searchResultsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                if (!searchResultsList.isEmpty())
+                {
+                    FindArtist(searchResultsList.get(position));
+
+                    viewFlipper.setDisplayedChild(1);
+                }
+            }
+        });
+
+        searchText.setOnKeyListener(this);
+
         super.onActivityCreated(savedInstanceState);
+    }
+
+    public void DismissKeyboard(Activity activity) {
+        InputMethodManager inputMethodManager = (InputMethodManager) activity
+                .getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+
+        inputMethodManager.hideSoftInputFromWindow(
+                activity.getCurrentFocus()
+                        .getWindowToken(), 0);
     }
 
     @Override
     public void onDestroyView() {
 
-        /*viewFlipper = null;
+        viewFlipper = null;
         artistsListView = null;
         artistList = null;
         artistsArrayAdapter = null;
@@ -179,8 +214,7 @@ public class MusicFragment extends Fragment {
         tagTextView = null;
         addArtistButton = null;
         backButton = null;
-        task = null;
-        artistImage = null;*/
+        artistImage = null;
 
         super.onDestroyView();
     }
@@ -188,6 +222,48 @@ public class MusicFragment extends Fragment {
     public void Back(View view)
     {
         viewFlipper.showPrevious();
+
+        searchText.setText("");
+        searchText.clearFocus();
+    }
+
+    private void SearchArtist()
+    {
+        String artistName = searchText.getText().toString();
+
+        String url = LastFmRest.getInstance().SearchArtist(artistName);
+
+        viewFlipper.setDisplayedChild(2);
+
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+
+                        JSONObject object = null;
+
+                        try {
+                            object = new JSONObject(response);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                        String[] results = LastFmJsonParser.getInstance().ParseArtistSearchResults(object);
+
+                        if (results.length > 0)
+                        {
+                            searchResultsList.clear();
+                            searchResultsList.addAll(Arrays.asList(results));
+                            searchResultsArrayAdapter.notifyDataSetChanged();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+            }
+        });
+
+        VolleyManager.getInstance(getContext()).getRequestQueue().add(stringRequest);
     }
 
     private void FindArtist(String artistName)
@@ -196,7 +272,7 @@ public class MusicFragment extends Fragment {
 
         if (artist != null)
         {
-            Log.i("LOCAL", "Found local data.");
+            Log.i("LOCAL", "Retrieving local data.");
             artistImage = LocalDataManager.getInstance(getActivity()).FetchBitmapFromLocal(artistName);
             if (artistImage == null)
             {
@@ -214,7 +290,7 @@ public class MusicFragment extends Fragment {
 
     private void FetchRemote(String artistName)
     {
-        Log.i("INFO", "Fetching from Remote");
+        Log.i("REMOTE", "Fetching from Remote");
         artistTextView.setText("Fetching...");
         tagTextView.setText("");
 
@@ -253,9 +329,16 @@ public class MusicFragment extends Fragment {
 
         similarArtistsList.addAll(artist.getSimilar());
 
-        Log.i("SA", String.valueOf(similarArtistsList.size()) + " asdsa");
-
         similarArtistsArrayAdapter.notifyDataSetChanged();
+
+        if (ProfileManager.getInstance().UserHasArtistAdded(artist))
+        {
+            addArtistButton.setVisibility(View.INVISIBLE);
+        }
+        else
+        {
+            addArtistButton.setVisibility(View.VISIBLE);
+        }
 
     }
 
@@ -279,7 +362,7 @@ public class MusicFragment extends Fragment {
                 {
                     if (objects.size() > 0)
                     {
-                        Log.i("INFO", "updating artists");
+                        Log.i("PARSE", "Updating User Artist List.");
                         ParseObject object = objects.get(0);
                         object.addAllUnique("artists", tempList);
                         object.addAllUnique("genres", tagList);
@@ -315,65 +398,49 @@ public class MusicFragment extends Fragment {
                 if (artist != null)
                 {
                     PopulateSimilarArtistsListView();
-                }
-
-                if (artistImage == null) {
 
                     ImageRequest ir = new ImageRequest(artist.getImageUrl(), new Response.Listener<Bitmap>() {
                         @Override
                         public void onResponse(Bitmap response) {
-                            LocalDataManager.getInstance(getContext()).SaveBitmapToLocal(response, artist.getName());
+                            artistImage = response;
 
                             artistImageView.setImageBitmap(artistImage);
 
+                            artist.setImageArrayString(LocalDataManager.getInstance(getActivity()).ConvertBitmapToStringArrayOfBytes(artistImage));
+
+                            LocalDataManager.getInstance(getActivity()).SaveArtistToLocal(artist);
+
                             LocalDataManager.getInstance(getActivity()).SaveBitmapToLocal(artistImage, artist.getName());
 
-                            /*byte[] byteArray = LocalDataManager.getInstance(getActivity()).ConvertBitmapToByteArray(artistImage);
-
-                            Log.i("PARSE", "Saving a copy on parse.");
-                            ParseFile imageFile = new ParseFile(java.util.UUID.randomUUID() + ".png", byteArray);
-                            ParseObject artistImageObject = new ParseObject("ArtistImages");
-                            artistImageObject.put("artist", artist.getName());
-                            artistImageObject.put("image", imageFile);
-                            artistImageObject.saveInBackground();*/
                         }
-                    }, 100, 100, null, null);
+                    }, 0, 0, null, null);
 
                     VolleyManager.getInstance(getContext()).getRequestQueue().add(ir);
                 }
 
-                ParseQuery<ParseObject> query2 = ParseQuery.getQuery("UserInfo");
-
-                query2.whereEqualTo("username", ParseUser.getCurrentUser().getUsername());
-
-                query2.findInBackground(new FindCallback<ParseObject>() {
-                    @Override
-                    public void done(List<ParseObject> objects, ParseException e) {
-                        if (e == null)
-                        {
-                            if (objects.size() > 0)
-                            {
-                                ParseObject object = objects.get(0);
-                                if (object.getList("artists").contains(artist.getName()))
-                                {
-                                    addArtistButton.setVisibility(View.INVISIBLE);
-                                }
-                                else
-                                {
-                                    addArtistButton.setVisibility(View.VISIBLE);
-                                }
-                            }
-                        }
-                    }
-                });
             }
 
         } catch (JSONException e) {
             e.printStackTrace();
         }
 
+        UpdateView();
+
     }
 
 
 
+
+    @Override
+    public boolean onKey(View v, int keyCode, KeyEvent event) {
+
+        if (keyCode == KeyEvent.KEYCODE_ENTER)
+        {
+            DismissKeyboard(getActivity());
+
+            SearchArtist();
+        }
+
+        return false;
+    }
 }

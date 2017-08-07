@@ -1,6 +1,7 @@
-package com.parse.session;
+package com.sean.session;
 
 import android.graphics.Bitmap;
+import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
@@ -22,6 +23,7 @@ import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
+import com.parse.session.R;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -78,9 +80,7 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.frame_layout, HomeFragment.newInstance());
-        transaction.commit();
+
 
     }
 
@@ -114,7 +114,9 @@ public class HomeActivity extends AppCompatActivity {
 
                         ProfileManager.getInstance().currentUser = currentUser;
 
-                        PopulateUserProfile();
+                        new MyAsyncTask().execute();
+
+                        //PopulateUserProfile();
                     }
                     else
                     {
@@ -163,7 +165,7 @@ public class HomeActivity extends AppCompatActivity {
 
     public void TaskComplete(String result) {
 
-        Log.i("RESULT", "Result Found.");
+        Log.i("REMOTE", "Result Found.");
 
         JSONObject jsonObject;
 
@@ -202,6 +204,21 @@ public class HomeActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
+    }
+
+    private class MyAsyncTask extends AsyncTask<Void, Void, Void>
+    {
+        @Override
+        protected Void doInBackground(Void... params) {
+            PopulateUserProfile();
+            return null;
+        }
+        @Override
+        protected void onPostExecute(Void result) {
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            transaction.replace(R.id.frame_layout, HomeFragment.newInstance());
+            transaction.commit();
+        }
     }
 }
 

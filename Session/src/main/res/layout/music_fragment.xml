@@ -12,11 +12,21 @@
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            tools:context="com.parse.session.MusicFragment">
+            tools:context="com.parse.session.com.sean.session.MusicFragment">
 
+            <EditText
+                android:id="@+id/artistSearchText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="100dp"
+                android:layout_marginRight="100dp"
+                android:ems="10"
+                android:hint="Search..."
+                android:inputType="textPersonName" />
 
             <ListView
                 android:id="@+id/artistsListView"
+                android:layout_below="@id/artistSearchText"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_centerHorizontal="true"
@@ -26,7 +36,7 @@
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            tools:context="com.parse.session.MusicFragment">
+            tools:context="com.parse.session.com.sean.session.MusicFragment">
 
             <Button
                 android:id="@+id/backButton"
@@ -94,6 +104,19 @@
                 android:textAlignment="viewStart" />
 
 
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:context="com.parse.session.com.sean.session.MusicFragment">
+
+            <ListView
+                android:id="@+id/foundArtistsListView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true" />
         </RelativeLayout>
 
     </ViewFlipper>

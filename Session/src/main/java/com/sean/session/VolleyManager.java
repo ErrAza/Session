@@ -1,4 +1,4 @@
-package com.parse.session;
+package com.sean.session;
 
 import android.content.Context;
 import android.graphics.Bitmap;

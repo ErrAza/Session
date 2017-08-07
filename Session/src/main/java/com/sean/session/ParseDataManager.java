@@ -1,4 +1,4 @@
-package com.parse.session;
+package com.sean.session;
 
 /**
  * Created by Sean on 8/3/2017.

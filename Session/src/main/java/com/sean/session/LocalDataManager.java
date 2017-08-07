@@ -1,4 +1,4 @@
-package com.parse.session;
+package com.sean.session;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -11,10 +11,6 @@ import android.util.Log;
 import com.google.gson.Gson;
 
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Created by Sean on 8/3/2017.

@@ -1,4 +1,4 @@
-package com.parse.session;
+package com.sean.session;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -10,6 +10,7 @@ import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
+import com.parse.session.R;
 
 import java.util.ArrayList;
 import java.util.HashMap;

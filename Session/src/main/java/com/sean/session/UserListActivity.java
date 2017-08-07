@@ -1,4 +1,4 @@
-package com.parse.session;
+package com.sean.session;
 
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -23,6 +23,7 @@ import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
 import com.parse.SaveCallback;
+import com.parse.session.R;
 
 import java.util.ArrayList;
 import java.util.List;
